@@ -1,2 +1,2 @@
 # BlueLock
-Test6
+Test7
