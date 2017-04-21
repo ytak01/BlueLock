@@ -6,6 +6,7 @@ using InTheHand.Net;
 using InTheHand.Net.Bluetooth;
 using InTheHand.Net.Bluetooth.AttributeIds;
 using InTheHand.Net.Sockets;
+using System.Diagnostics;
 
 namespace BlueLock
 {
@@ -29,19 +30,76 @@ namespace BlueLock
                 this.GetServiceRecords(FakeServiceId);
                 return true;
             }
-            catch (SocketException)
+            catch (SocketException e)
             {
+                Debug.WriteLine(e.ErrorCode + ":" + e.Message);
                 return false;
             }
         }
+
+        private static bool firstinrange = true;
+        public bool FirstInRange
+        {
+            get {
+                return firstinrange;
+            }
+            set {
+                firstinrange = value;
+            }
+        }
+
+        public DateTime OutRangeDate
+        {
+            get;
+            private set;
+        }
+
+        public DateTime InRangeDate
+        {
+            get;
+            private set;
+        }
+
+        public int InRangeCount
+        {
+            get;
+            private set;
+        }
+
+        public int OutRangeCount
+        {
+            get;
+            private set;
+        }
+
+        private bool dinrange;
 
         /// <summary>
         /// The current in range state.
         /// </summary>
         public bool DeviceInRange
         {
-            get;
-            set;
+            get {
+                return dinrange;
+            }
+            set {
+                dinrange = value;
+                if(dinrange)
+                {
+                    firstinrange = false;
+                    InRangeCount = InRangeCount + 1;
+                    OutRangeCount = 0;
+                    InRangeDate = DateTime.Now;
+                    OutRangeDate = DateTime.MinValue;
+                }
+                else
+                {
+                    InRangeCount = 0;
+                    OutRangeCount = OutRangeCount + 1;
+                    InRangeDate = DateTime.MinValue;
+                    OutRangeDate = DateTime.Now;
+                }
+            }
         }
 
         /// <summary>
@@ -88,13 +146,13 @@ namespace BlueLock
         /// <param name="force">Whether to force setting the device state even if it has not changed.</param>
         public void SetLockedState(bool inRange = false, bool force = false)
         {
-            if (inRange && !DeviceInRange)
+            if (inRange)
             {
                 // Device came back in range
                 DeviceInRange = true;
                 TriggerDeviceStateChanged(true);
             }
-            else if (!inRange && DeviceInRange)
+            else if (!inRange)
             {
                 // Device went out of range
                 DeviceInRange = false;

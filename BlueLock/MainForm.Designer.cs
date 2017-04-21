@@ -36,9 +36,9 @@
             // 
             // btnDebug
             // 
-            this.btnDebug.Location = new System.Drawing.Point(12, 38);
+            this.btnDebug.Location = new System.Drawing.Point(12, 35);
             this.btnDebug.Name = "btnDebug";
-            this.btnDebug.Size = new System.Drawing.Size(107, 23);
+            this.btnDebug.Size = new System.Drawing.Size(107, 21);
             this.btnDebug.TabIndex = 1;
             this.btnDebug.Text = "Debug";
             this.btnDebug.UseVisualStyleBackColor = true;
@@ -46,9 +46,9 @@
             // 
             // btnSettings
             // 
-            this.btnSettings.Location = new System.Drawing.Point(125, 38);
+            this.btnSettings.Location = new System.Drawing.Point(125, 35);
             this.btnSettings.Name = "btnSettings";
-            this.btnSettings.Size = new System.Drawing.Size(107, 23);
+            this.btnSettings.Size = new System.Drawing.Size(107, 21);
             this.btnSettings.TabIndex = 2;
             this.btnSettings.Text = "Settings";
             this.btnSettings.UseVisualStyleBackColor = true;
@@ -57,23 +57,24 @@
             // txtStatus
             // 
             this.txtStatus.BackColor = System.Drawing.Color.Orange;
-            this.txtStatus.Location = new System.Drawing.Point(12, 12);
+            this.txtStatus.Location = new System.Drawing.Point(12, 11);
             this.txtStatus.Name = "txtStatus";
-            this.txtStatus.Size = new System.Drawing.Size(220, 20);
+            this.txtStatus.Size = new System.Drawing.Size(220, 19);
             this.txtStatus.TabIndex = 3;
             this.txtStatus.Text = "Status: Unknown";
             this.txtStatus.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
             // 
             // MainForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(244, 73);
+            this.ClientSize = new System.Drawing.Size(244, 67);
             this.Controls.Add(this.txtStatus);
             this.Controls.Add(this.btnSettings);
             this.Controls.Add(this.btnDebug);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.Name = "MainForm";
             this.Text = "BlueLock";
             this.Load += new System.EventHandler(this.MainForm_Load);

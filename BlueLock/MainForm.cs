@@ -6,26 +6,12 @@ using System.Timers;
 using System.Windows.Forms;
 using BlueLock.Extensions;
 using BlueLock.Properties;
+using System.Security.Permissions;
 
 namespace BlueLock
 {
     public partial class MainForm : Form
     {
-        /// <summary>
-        /// The currently selected Bluetooth device.
-        /// </summary>
-        //private static BluetoothDevice _device;
-
-        /// <summary>
-        /// The timer interval used for device checking.
-        /// </summary>
-        //private static int _timerInterval = 15000;
-
-        /// <summary>
-        /// The timer used for periodic device checking.
-        /// </summary>
-        //private static readonly System.Timers.Timer Timer = new System.Timers.Timer(_timerInterval);
-
         /// <summary>
         /// The singleton StatusForm.
         /// </summary>
@@ -48,9 +34,6 @@ namespace BlueLock
             _statusForm = new StatusForm();
             _logoForm = new LogoForm(this);
 
-            AttachEvents();
-
-            _statusForm.Start();
             _settingsForm = new SettingsForm(_statusForm);
         }
 
@@ -78,7 +61,7 @@ namespace BlueLock
         /// <param name="elapsedEventArgs">The event arguments.</param>
         private void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
-            CheckDeviceInRange();
+            //CheckDeviceInRange();
         }
 
         /// <summary>
@@ -88,11 +71,11 @@ namespace BlueLock
         private void CheckDeviceInRange(bool force = false)
         {
             var inRange = StatusForm.Device.IsInRange();
-            _statusForm.LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service > {(inRange ? "In range" : "Not in range")}");
+            _statusForm.LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service_m > {(inRange ? "In range" : "Not in range")}");
             StatusForm.Device.SetLockedState(inRange, force);
         }
 
-        private void DeviceStateChangeCallback(bool inRange)
+        private void DeviceStateChange(bool inRange)
         {
             if (inRange)
             {
@@ -110,7 +93,17 @@ namespace BlueLock
             }
         }
 
-        private void MainForm_Load(object sender, EventArgs e) { }
+        delegate void delegateDeviceStateChangeCallback(bool inRange);
+        private void DeviceStateChangeCallback(bool inRange)
+        {
+            Invoke(new delegateDeviceStateChangeCallback(DeviceStateChange), inRange);
+        }
+
+        private void MainForm_Load(object sender, EventArgs e)
+        {
+            AttachEvents();
+            _statusForm.Start();
+        }
 
         private void btnDebug_Click(object sender, EventArgs e)
         {
@@ -138,9 +131,29 @@ namespace BlueLock
             }
             else
             {
-                _logoForm.Hide();
+                if (_logoForm != null)
+                {
+                    _logoForm.Hide();
+                }
                 this.ShowInTaskbar = true;
             }
+        }
+
+
+        [SecurityPermission(SecurityAction.Demand,
+            Flags = SecurityPermissionFlag.UnmanagedCode)]
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_NCLBUTTONDBLCLK = 0xA3;
+
+            if (m.Msg == WM_NCLBUTTONDBLCLK)
+            {
+                //非クライアント領域がダブルクリックされた時
+                m.Result = IntPtr.Zero;
+                return;
+            }
+
+            base.WndProc(ref m);
         }
     }
 }

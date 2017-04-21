@@ -36,9 +36,9 @@
             // 
             // btnSelect
             // 
-            this.btnSelect.Location = new System.Drawing.Point(15, 38);
+            this.btnSelect.Location = new System.Drawing.Point(15, 35);
             this.btnSelect.Name = "btnSelect";
-            this.btnSelect.Size = new System.Drawing.Size(217, 23);
+            this.btnSelect.Size = new System.Drawing.Size(217, 21);
             this.btnSelect.TabIndex = 0;
             this.btnSelect.Text = "Select Device";
             this.btnSelect.UseVisualStyleBackColor = true;
@@ -47,30 +47,31 @@
             // lblCurrent
             // 
             this.lblCurrent.AutoSize = true;
-            this.lblCurrent.Location = new System.Drawing.Point(12, 15);
+            this.lblCurrent.Location = new System.Drawing.Point(12, 14);
             this.lblCurrent.Name = "lblCurrent";
-            this.lblCurrent.Size = new System.Drawing.Size(81, 13);
+            this.lblCurrent.Size = new System.Drawing.Size(84, 12);
             this.lblCurrent.TabIndex = 1;
             this.lblCurrent.Text = "Current Device:";
             // 
             // txtCurrent
             // 
             this.txtCurrent.Enabled = false;
-            this.txtCurrent.Location = new System.Drawing.Point(99, 12);
+            this.txtCurrent.Location = new System.Drawing.Point(99, 11);
             this.txtCurrent.Name = "txtCurrent";
-            this.txtCurrent.Size = new System.Drawing.Size(133, 20);
+            this.txtCurrent.Size = new System.Drawing.Size(133, 19);
             this.txtCurrent.TabIndex = 2;
             // 
             // SettingsForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(244, 73);
+            this.ClientSize = new System.Drawing.Size(244, 67);
             this.Controls.Add(this.txtCurrent);
             this.Controls.Add(this.lblCurrent);
             this.Controls.Add(this.btnSelect);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MaximizeBox = false;
             this.Name = "SettingsForm";
             this.Text = "BlueLock";
             this.Load += new System.EventHandler(this.SettingsForm_Load);

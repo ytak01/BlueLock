@@ -4,6 +4,9 @@ using System.Timers;
 using System.Windows.Forms;
 using BlueLock.Extensions;
 using InTheHand.Net.Bluetooth;
+using System.Diagnostics;
+using System.Threading;
+using Win32_API;
 
 namespace BlueLock
 {
@@ -13,16 +16,6 @@ namespace BlueLock
         /// The Bluetooth Component used for Bluetooth information gathering.
         /// </summary>
         public static readonly BluetoothComponent Component = new BluetoothComponent();
-
-        ///// <summary>
-        ///// The Bluetooth Client used for connecting to Bluetooth devices.
-        ///// </summary>
-        //private static readonly BluetoothClient Client = new BluetoothClient();
-
-        ///// <summary>
-        ///// Event registration for Bluetooth events.
-        ///// </summary>
-        //private static readonly BluetoothWin32Events EventRegistration = BluetoothWin32Events.GetInstance();
 
         /// <summary>
         /// The currently selected Bluetooth device.
@@ -37,15 +30,7 @@ namespace BlueLock
         /// <summary>
         /// The timer used for periodic device checking.
         /// </summary>
-        public static readonly System.Timers.Timer Timer = new System.Timers.Timer(TimerInterval);
-
-        /// <summary>
-        /// The Windows command used to lock the workstation.
-        /// </summary>
-        /// <returns></returns>
-        [DllImport("user32.dll")]
-        //[DllImport("user32.dll", SetLastError = true)]
-        public static extern bool LockWorkStation();
+        public static System.Timers.Timer Timer = new System.Timers.Timer(TimerInterval);
 
         /// <summary>
         /// The initialisation of the main form.
@@ -86,6 +71,7 @@ namespace BlueLock
         private void UseLastDevice(BluetoothDevice discoveredDevice)
         {
             LogMessage($"Last device loaded > {discoveredDevice.DeviceName}");
+            Debug.WriteLine(discoveredDevice.DeviceName);
             SetDevice(discoveredDevice);
         }
 
@@ -121,8 +107,6 @@ namespace BlueLock
                 return;
             }
 
-            //EventRegistration.InRange += EventRegistrationOnInRange;
-            //EventRegistration.OutOfRange += EventRegistrationOnOutOfRange;
             Component.DiscoverDevicesComplete += ComponentOnDiscoverDevicesComplete;
             Timer.Elapsed += TimerOnElapsed;
             LogMessage("Status events registered.");
@@ -136,11 +120,15 @@ namespace BlueLock
         /// </param>
         public void LogMessage(string message)
         {
-            listBox1.PerformSafely(() => listBox1.Items.Add(message));
+            Debug.WriteLine(message);
             listBox1.PerformSafely(() =>
             {
-                listBox1.SetSelected(listBox1.Items.Count - 1, true);
-                listBox1.SetSelected(listBox1.Items.Count - 1, false);
+                listBox1.Items.Add(message);
+                if (listBox1.SelectedItem != null)
+                {
+                    listBox1.SetSelected(listBox1.Items.Count - 1, true);
+                    listBox1.SetSelected(listBox1.Items.Count - 1, false);
+                }
             });
         }
 
@@ -151,30 +139,6 @@ namespace BlueLock
         {
             listBox1.PerformSafely(() => listBox1.Items.Clear());
         }
-
-        ///// <summary>
-        ///// The event callback for when a device goes out of range according to Bluetooth events.
-        ///// </summary>
-        ///// <param name="sender">The sender.</param>
-        ///// <param name="bluetoothWin32RadioInRangeEventArgs">The event arguments.</param>
-        //private void EventRegistrationOnOutOfRange(object sender, BluetoothWin32RadioOutOfRangeEventArgs bluetoothWin32RadioOutOfRangeEventArgs)
-        //{
-        //    LogMessage($"Out of range > {bluetoothWin32RadioOutOfRangeEventArgs.Device.DeviceName}");
-        //}
-
-        ///// <summary>
-        ///// The event callback for when a device comes in range according to Bluetooth events.
-        ///// </summary>
-        ///// <param name="sender">
-        ///// The sender.
-        ///// </param>
-        ///// <param name="bluetoothWin32RadioInRangeEventArgs">
-        ///// The event arguments.
-        ///// </param>
-        //private void EventRegistrationOnInRange(object sender, BluetoothWin32RadioInRangeEventArgs bluetoothWin32RadioInRangeEventArgs)
-        //{
-        //    LogMessage($"In range > {bluetoothWin32RadioInRangeEventArgs.Device.DeviceName}: {(bluetoothWin32RadioInRangeEventArgs.Device.Connected ? "Connected" : "Not connected")}");
-        //}
 
         /// <summary>
         /// The callback for when asynchronous device discovery completes.
@@ -205,7 +169,9 @@ namespace BlueLock
         /// <param name="elapsedEventArgs">The event arguments.</param>
         private void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
+            Timer.Enabled = false;
             CheckDeviceInRange();
+            Timer.Enabled = true;
         }
 
         /// <summary>
@@ -215,22 +181,43 @@ namespace BlueLock
         private void CheckDeviceInRange(bool force = false)
         {
             var inRange = Device.IsInRange();
-            LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service > {(inRange ? "In range" : "Not in range")}");
+            string str = String.Format("InRC:{0} OutRC:{1}", Device.InRangeCount, Device.OutRangeCount);
             Device.SetLockedState(inRange, force);
+            LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service > {(inRange ? "In range" : "Not in range")} (" + str +")");
         }
 
         private void DeviceInRangeCallback(bool inRange)
         {
+            var idt = Win32.GetIdleTime();
+            //string str = "Total time : " + Win32.GetTickCount().ToString() + "; " + "Last input time : " + Win32.GetLastInputTime().ToString();
+            string str = "Idle time : " + idt.ToString();
+
             if (inRange)
             {
                 // Device came back in range
-                LogMessage("Device in range");
+                LogMessage("Device in range(" + str + ")");
             }
             else
             {
+                bool b = false;
                 // Device went out of range
-                LogMessage("Device out of range > locking Windows!");
-                LockWorkStation();
+                if (Device.OutRangeCount > 2)
+                {
+                    if (!Device.FirstInRange)
+                    {
+                        if (idt > TimerInterval * 3)
+                        {
+                            b = true;
+                            Device.FirstInRange = true;
+                            LogMessage("Device out of range" + str + " > locking Windows!(" + Device.OutRangeCount.ToString() + ")");
+                            Win32.LockWorkStation();
+                        }
+                    }
+                }
+                if (!b)
+                {
+                    LogMessage("Device out of range(" + str + ")");
+                }
             }
 
             TriggerDeviceStateChanged(inRange);
@@ -254,9 +241,8 @@ namespace BlueLock
             {
                 LogMessage(
                     $"Device selected > {device.DeviceName} [{device.DeviceAddress}]: {(device.Authenticated ? "Authenticated, " : "")}{(device.Connected ? "Connected, " : "")}{(device.Remembered ? "Remembered, " : "")}{device.ClassOfDevice.Device} ({device.ClassOfDevice.MajorDevice}), {device.Rssi}");
+                SetDevice(device);
             }
-
-            SetDevice(device);
         }
 
         private void button1_Click(object sender, EventArgs e)

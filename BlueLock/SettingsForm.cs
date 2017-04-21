@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
+using System.Security.Permissions;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -39,6 +40,23 @@ namespace BlueLock
         private void btnSelect_Click(object sender, EventArgs e)
         {
             _statusForm.SelectDevice();
+        }
+
+
+        [SecurityPermission(SecurityAction.Demand,
+            Flags = SecurityPermissionFlag.UnmanagedCode)]
+        protected override void WndProc(ref Message m)
+        {
+            const int WM_NCLBUTTONDBLCLK = 0xA3;
+
+            if (m.Msg == WM_NCLBUTTONDBLCLK)
+            {
+                //非クライアント領域がダブルクリックされた時
+                m.Result = IntPtr.Zero;
+                return;
+            }
+
+            base.WndProc(ref m);
         }
     }
 }
