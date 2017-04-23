@@ -1,4 +1,3 @@
-
 using System;
 using System.Runtime.InteropServices;
 
@@ -24,8 +23,15 @@ namespace Win32_API
 
 		[DllImport("Kernel32.dll")]
 		private static extern uint GetLastError();
-	
-		public static uint GetIdleTime()
+
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSRegisterSessionNotification(IntPtr hWnd, [MarshalAs(UnmanagedType.U4)] int dwFlags);
+
+        [DllImport("wtsapi32.dll", SetLastError = true)]
+        public static extern bool WTSUnRegisterSessionNotification(IntPtr hWnd);
+
+        public static uint GetIdleTime()
 		{
 			LASTINPUTINFO lastInPut = new LASTINPUTINFO();
 			lastInPut.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(lastInPut);

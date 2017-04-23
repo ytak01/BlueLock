@@ -28,11 +28,13 @@ namespace BlueLock
             try
             {
                 this.GetServiceRecords(FakeServiceId);
+                Debug.WriteLine("Rssi:{0}",this.Rssi);
                 return true;
             }
             catch (SocketException e)
             {
                 Debug.WriteLine(e.ErrorCode + ":" + e.Message);
+                Debug.WriteLine("LastSeen:{0} LastUsed:{1}", this.LastSeen, this.LastUsed);
                 return false;
             }
         }
@@ -87,7 +89,7 @@ namespace BlueLock
                 if(dinrange)
                 {
                     firstinrange = false;
-                    InRangeCount = InRangeCount + 1;
+                    InRangeCount += 1;
                     OutRangeCount = 0;
                     InRangeDate = DateTime.Now;
                     OutRangeDate = DateTime.MinValue;
@@ -95,7 +97,7 @@ namespace BlueLock
                 else
                 {
                     InRangeCount = 0;
-                    OutRangeCount = OutRangeCount + 1;
+                    OutRangeCount += 1;
                     InRangeDate = DateTime.MinValue;
                     OutRangeDate = DateTime.Now;
                 }
