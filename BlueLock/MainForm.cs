@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Drawing;
-using System.Runtime.InteropServices;
-using System.Runtime.Remoting.Channels;
-using System.Timers;
 using System.Windows.Forms;
-using BlueLock.Extensions;
 using BlueLock.Properties;
 using System.Security.Permissions;
+using Win32_API;
 
 namespace BlueLock
 {
@@ -27,9 +24,69 @@ namespace BlueLock
         /// </summary>
         private static LogoForm _logoForm;
 
+        public enum ConsoleNotificationFlagsEnum
+        {
+            NOTIFY_FOR_ALL_SESSIONS = 1,
+            NOTIFY_FOR_THIS_SESSION = 0
+        }
+        private const int WM_WTSSESSION_CHANGE = 0x2b1;
+
+        public enum WM_WTSESSION_CHANGE_WparamEnum
+        {
+            WTS_CONSOLE_CONNECT = 0x1,
+            WTS_CONSOLE_DISCONNECT = 0x2,
+            WTS_REMOTE_CONNECT = 0x3,
+            WTS_REMOTE_DISCONNECT = 0x4,
+            WTS_SESSION_LOGON = 0x5,
+            WTS_SESSION_LOGOFF = 0x6,
+            WTS_SESSION_LOCK = 0x7,
+            WTS_SESSION_UNLOCK = 0x8,
+            WTS_SESSION_REMOTE_CONTROL = 0x9
+        }
+
+        public event Action<WM_WTSESSION_CHANGE_WparamEnum> WTSessionChange;
+
         public MainForm()
         {
             InitializeComponent();
+
+            Win32.WTSRegisterSessionNotification(this.Handle, (int)ConsoleNotificationFlagsEnum.NOTIFY_FOR_THIS_SESSION);
+            this.Closed += (sender, args) => Win32.WTSUnRegisterSessionNotification(this.Handle);
+            this.WTSessionChange += (param) =>
+            {
+                switch (param)
+                {
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_CONNECT:
+                        _statusForm.LogMessage("Console Connect");
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_DISCONNECT:
+                        _statusForm.LogMessage("Console Disconnect");
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_CONNECT:
+                        _statusForm.LogMessage("Remote Connect");
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_DISCONNECT:
+                        _statusForm.LogMessage("Remote Disconnect");
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGON:
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGOFF:
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOCK:
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_UNLOCK:
+                        _statusForm.LogMessage("Session Unlock");
+                        break;
+                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_REMOTE_CONTROL:
+                        _statusForm.LogMessage("Remote Control");
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException("param");
+                }
+            };
+
+            //前のバージョンの設定を読み込み、新しいバージョンの設定とする
+            Properties.Settings.Default.Upgrade();
 
             _statusForm = new StatusForm();
             _logoForm = new LogoForm(this);
@@ -48,31 +105,9 @@ namespace BlueLock
                 return;
             }
 
-            StatusForm.Timer.Elapsed += TimerOnElapsed;
             _statusForm.DeviceStateChanged += (sender, args) => { DeviceStateChangeCallback(args.InRange); };
             _statusForm.InitialDeviceState += (sender, args) => { DeviceStateChangeCallback(args.InRange); };
             _statusForm.LogMessage("Main events registered.");
-        }
-
-        /// <summary>
-        /// The callback of the timer elapsing.
-        /// </summary>
-        /// <param name="sender">The sender.</param>
-        /// <param name="elapsedEventArgs">The event arguments.</param>
-        private void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
-        {
-            //CheckDeviceInRange();
-        }
-
-        /// <summary>
-        /// Check whether the device is in range.
-        /// </summary>
-        /// <param name="force">Whether to force setting the device state even if it has not changed.</param>
-        private void CheckDeviceInRange(bool force = false)
-        {
-            var inRange = StatusForm.Device.IsInRange();
-            _statusForm.LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service_m > {(inRange ? "In range" : "Not in range")}");
-            StatusForm.Device.SetLockedState(inRange, force);
         }
 
         private void DeviceStateChange(bool inRange)
@@ -118,6 +153,31 @@ namespace BlueLock
             _settingsForm.Location = new Point(this.Location.X + this.Size.Width, this.Location.Y);
         }
 
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            _logoForm.Hide();
+            base.Show();
+            this.Visible = true;
+            this.ShowInTaskbar = true;
+            base.Activate();
+        }
+
+        private void terminateToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            notifyIcon1.Visible = false;
+            Application.Exit();
+        }
+
+        private void toolStripMenuItem_Start_Click(object sender, EventArgs e)
+        {
+            _statusForm.EnsureTimerRunning();
+        }
+
+        private void toolStripMenuItem_Stop_Click(object sender, EventArgs e)
+        {
+            _statusForm.EnsureTimerStopped();
+        }
+
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)
@@ -134,11 +194,10 @@ namespace BlueLock
                 if (_logoForm != null)
                 {
                     _logoForm.Hide();
+                    this.ShowInTaskbar = true;
                 }
-                this.ShowInTaskbar = true;
             }
         }
-
 
         [SecurityPermission(SecurityAction.Demand,
             Flags = SecurityPermissionFlag.UnmanagedCode)]
@@ -152,8 +211,17 @@ namespace BlueLock
                 m.Result = IntPtr.Zero;
                 return;
             }
+            if (m.Msg == WM_WTSSESSION_CHANGE)
+            {
+                this.onWtSessionChange((WM_WTSESSION_CHANGE_WparamEnum)m.WParam);
+            }
 
             base.WndProc(ref m);
+        }
+
+        private void onWtSessionChange(WM_WTSESSION_CHANGE_WparamEnum wparamEnum)
+        {
+            this.WTSessionChange?.Invoke(wparamEnum);
         }
     }
 }

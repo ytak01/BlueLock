@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Runtime.InteropServices;
 using System.Timers;
 using System.Windows.Forms;
 using BlueLock.Extensions;
@@ -25,12 +24,12 @@ namespace BlueLock
         /// <summary>
         /// The timer interval used for device checking.
         /// </summary>
-        public static int TimerInterval = 15000;
+        public static int TimerInterval = 15;
 
         /// <summary>
         /// The timer used for periodic device checking.
         /// </summary>
-        public static System.Timers.Timer Timer = new System.Timers.Timer(TimerInterval);
+        public static System.Timers.Timer Timer;
 
         /// <summary>
         /// The initialisation of the main form.
@@ -38,6 +37,10 @@ namespace BlueLock
         public StatusForm()
         {
             InitializeComponent();
+
+            TimerInterval = Properties.Settings.Default.TimerInterval;
+            Timer = new System.Timers.Timer(TimerInterval * 1000);
+            numericUpDown1.Value = TimerInterval;
         }
 
         public void Start()
@@ -77,13 +80,14 @@ namespace BlueLock
 
         public void EnsureTimerRunning()
         {
-            if (!Timer.EnsureTimerRunning(TimerInterval))
+            if (!Timer.EnsureTimerRunning(TimerInterval*1000))
             {
                 return;
             }
 
             SetInitialState();
             numericUpDown1.Enabled = false;
+            LogMessage($"Timer Start({TimerInterval} seconds)");
         }
 
         public void EnsureTimerStopped()
@@ -94,6 +98,7 @@ namespace BlueLock
             }
 
             numericUpDown1.Enabled = true;
+            LogMessage("Timer Stop");
         }
 
         /// <summary>
@@ -101,7 +106,7 @@ namespace BlueLock
         /// </summary>
         private void AttachEvents()
         {
-            if (/*EventRegistration == null || */Component == null || Timer == null)
+            if (Component == null || Timer == null)
             {
                 LogMessage("Having trouble registering events.");
                 return;
@@ -205,7 +210,7 @@ namespace BlueLock
                 {
                     if (!Device.FirstInRange)
                     {
-                        if (idt > TimerInterval * 3)
+                        if (idt > TimerInterval * 3000)
                         {
                             b = true;
                             Device.FirstInRange = true;
@@ -323,8 +328,19 @@ namespace BlueLock
 
         private void numericUpDown1_ValueChanged(object sender, EventArgs e)
         {
-            TimerInterval = (int)numericUpDown1.Value * 1000;
-            LogMessage($"Timer interval changed to {numericUpDown1.Value} seconds");
+            int tv = (int)numericUpDown1.Value;
+            if(tv < 5)
+            {
+                numericUpDown1.Value = 5;
+            }
+            else
+            {
+                TimerInterval = tv;
+                Properties.Settings.Default.TimerInterval = TimerInterval;
+                Properties.Settings.Default.Save();
+
+                LogMessage($"Timer interval changed to {TimerInterval} seconds");
+            }
         }
 
         private void DebugForm_Load(object sender, EventArgs e)
