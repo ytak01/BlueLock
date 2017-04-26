@@ -52,18 +52,19 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.listBox1.FormattingEnabled = true;
-            this.listBox1.Location = new System.Drawing.Point(12, 12);
+            this.listBox1.ItemHeight = 12;
+            this.listBox1.Location = new System.Drawing.Point(12, 11);
             this.listBox1.Name = "listBox1";
-            this.listBox1.Size = new System.Drawing.Size(480, 212);
+            this.listBox1.Size = new System.Drawing.Size(480, 196);
             this.listBox1.TabIndex = 0;
             // 
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button1.Location = new System.Drawing.Point(12, 233);
+            this.button1.Location = new System.Drawing.Point(12, 215);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(480, 23);
+            this.button1.Size = new System.Drawing.Size(480, 21);
             this.button1.TabIndex = 1;
             this.button1.Text = "Start Discovery";
             this.button1.UseVisualStyleBackColor = true;
@@ -73,9 +74,9 @@
             // 
             this.button2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button2.Location = new System.Drawing.Point(12, 378);
+            this.button2.Location = new System.Drawing.Point(12, 349);
             this.button2.Name = "button2";
-            this.button2.Size = new System.Drawing.Size(480, 23);
+            this.button2.Size = new System.Drawing.Size(480, 21);
             this.button2.TabIndex = 2;
             this.button2.Text = "Get Status";
             this.button2.UseVisualStyleBackColor = true;
@@ -85,9 +86,9 @@
             // 
             this.button3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button3.Location = new System.Drawing.Point(12, 262);
+            this.button3.Location = new System.Drawing.Point(12, 242);
             this.button3.Name = "button3";
-            this.button3.Size = new System.Drawing.Size(480, 23);
+            this.button3.Size = new System.Drawing.Size(480, 21);
             this.button3.TabIndex = 3;
             this.button3.Text = "Selection Dialog";
             this.button3.UseVisualStyleBackColor = true;
@@ -97,9 +98,9 @@
             // 
             this.button4.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button4.Location = new System.Drawing.Point(12, 349);
+            this.button4.Location = new System.Drawing.Point(12, 322);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(480, 23);
+            this.button4.Size = new System.Drawing.Size(480, 21);
             this.button4.TabIndex = 4;
             this.button4.Text = "List Services";
             this.button4.UseVisualStyleBackColor = true;
@@ -109,9 +110,9 @@
             // 
             this.button5.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button5.Location = new System.Drawing.Point(12, 320);
+            this.button5.Location = new System.Drawing.Point(12, 295);
             this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(480, 23);
+            this.button5.Size = new System.Drawing.Size(480, 21);
             this.button5.TabIndex = 5;
             this.button5.Text = "Show Versions";
             this.button5.UseVisualStyleBackColor = true;
@@ -121,9 +122,9 @@
             // 
             this.button6.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button6.Location = new System.Drawing.Point(12, 291);
+            this.button6.Location = new System.Drawing.Point(12, 269);
             this.button6.Name = "button6";
-            this.button6.Size = new System.Drawing.Size(480, 23);
+            this.button6.Size = new System.Drawing.Size(480, 21);
             this.button6.TabIndex = 6;
             this.button6.Text = "Dialog about Selected Device";
             this.button6.UseVisualStyleBackColor = true;
@@ -133,9 +134,9 @@
             // 
             this.button7.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button7.Location = new System.Drawing.Point(12, 407);
+            this.button7.Location = new System.Drawing.Point(12, 376);
             this.button7.Name = "button7";
-            this.button7.Size = new System.Drawing.Size(480, 23);
+            this.button7.Size = new System.Drawing.Size(480, 21);
             this.button7.TabIndex = 7;
             this.button7.Text = "Fake Service";
             this.button7.UseVisualStyleBackColor = true;
@@ -145,9 +146,9 @@
             // 
             this.button8.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button8.Location = new System.Drawing.Point(242, 465);
+            this.button8.Location = new System.Drawing.Point(242, 429);
             this.button8.Name = "button8";
-            this.button8.Size = new System.Drawing.Size(250, 23);
+            this.button8.Size = new System.Drawing.Size(250, 21);
             this.button8.TabIndex = 8;
             this.button8.Text = "Start Timer";
             this.button8.UseVisualStyleBackColor = true;
@@ -157,9 +158,9 @@
             // 
             this.button9.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button9.Location = new System.Drawing.Point(12, 494);
+            this.button9.Location = new System.Drawing.Point(12, 456);
             this.button9.Name = "button9";
-            this.button9.Size = new System.Drawing.Size(480, 23);
+            this.button9.Size = new System.Drawing.Size(480, 21);
             this.button9.TabIndex = 9;
             this.button9.Text = "Stop Timer";
             this.button9.UseVisualStyleBackColor = true;
@@ -169,9 +170,9 @@
             // 
             this.button10.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.button10.Location = new System.Drawing.Point(12, 436);
+            this.button10.Location = new System.Drawing.Point(12, 402);
             this.button10.Name = "button10";
-            this.button10.Size = new System.Drawing.Size(480, 23);
+            this.button10.Size = new System.Drawing.Size(480, 21);
             this.button10.TabIndex = 10;
             this.button10.Text = "Lock Workstation";
             this.button10.UseVisualStyleBackColor = true;
@@ -180,7 +181,7 @@
             // numericUpDown1
             // 
             this.numericUpDown1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.numericUpDown1.Location = new System.Drawing.Point(63, 468);
+            this.numericUpDown1.Location = new System.Drawing.Point(63, 432);
             this.numericUpDown1.Maximum = new decimal(new int[] {
             60,
             0,
@@ -192,7 +193,7 @@
             0,
             0});
             this.numericUpDown1.Name = "numericUpDown1";
-            this.numericUpDown1.Size = new System.Drawing.Size(120, 20);
+            this.numericUpDown1.Size = new System.Drawing.Size(120, 19);
             this.numericUpDown1.TabIndex = 11;
             this.numericUpDown1.Value = new decimal(new int[] {
             15,
@@ -205,9 +206,9 @@
             // 
             this.label1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(12, 470);
+            this.label1.Location = new System.Drawing.Point(12, 434);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(45, 13);
+            this.label1.Size = new System.Drawing.Size(45, 12);
             this.label1.TabIndex = 12;
             this.label1.Text = "Interval:";
             // 
@@ -215,17 +216,17 @@
             // 
             this.label2.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(189, 470);
+            this.label2.Location = new System.Drawing.Point(189, 434);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(47, 13);
+            this.label2.Size = new System.Drawing.Size(47, 12);
             this.label2.TabIndex = 13;
             this.label2.Text = "seconds";
             // 
             // StatusForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(504, 529);
+            this.ClientSize = new System.Drawing.Size(504, 488);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.numericUpDown1);
@@ -242,7 +243,7 @@
             this.Controls.Add(this.listBox1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "StatusForm";
-            this.Text = "BlueLock";
+            this.Text = "BlueLock Status";
             this.Load += new System.EventHandler(this.DebugForm_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             this.ResumeLayout(false);

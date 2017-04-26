@@ -24,22 +24,25 @@ namespace BlueLock
         /// <summary>
         /// The timer interval used for device checking.
         /// </summary>
-        public static int TimerInterval = 15;
+        public static int TimerInterval = 30;
 
         /// <summary>
         /// The timer used for periodic device checking.
         /// </summary>
         public static System.Timers.Timer Timer;
+        private IntPtr hwnd_mainform;
 
         /// <summary>
         /// The initialisation of the main form.
         /// </summary>
-        public StatusForm()
+        public StatusForm(IntPtr handle)
         {
             InitializeComponent();
 
+            this.hwnd_mainform = handle;
+
             TimerInterval = Properties.Settings.Default.TimerInterval;
-            Timer = new System.Timers.Timer(TimerInterval * 1000);
+            Timer = new System.Timers.Timer(TimerInterval / 3 * 1000);
             numericUpDown1.Value = TimerInterval;
         }
 
@@ -74,13 +77,12 @@ namespace BlueLock
         private void UseLastDevice(BluetoothDevice discoveredDevice)
         {
             LogMessage($"Last device loaded > {discoveredDevice.DeviceName}");
-            Debug.WriteLine(discoveredDevice.DeviceName);
             SetDevice(discoveredDevice);
         }
 
         public void EnsureTimerRunning()
         {
-            if (!Timer.EnsureTimerRunning(TimerInterval*1000))
+            if (!Timer.EnsureTimerRunning(TimerInterval * 1000))
             {
                 return;
             }
@@ -88,6 +90,12 @@ namespace BlueLock
             SetInitialState();
             numericUpDown1.Enabled = false;
             LogMessage($"Timer Start({TimerInterval} seconds)");
+      
+            IntPtr hWnd = Win32.FindWindow(null, "BlueLock");
+            if (hWnd != null)
+            {
+                Win32.SendMessage(hWnd, Win32.WM_MyMessage1, 0, 0);
+            }
         }
 
         public void EnsureTimerStopped()
@@ -99,6 +107,12 @@ namespace BlueLock
 
             numericUpDown1.Enabled = true;
             LogMessage("Timer Stop");
+
+            IntPtr hWnd = Win32.FindWindow(null, "BlueLock");
+            if (hWnd != null)
+            {
+                Win32.SendMessage(hWnd, Win32.WM_MyMessage2, 0, 0);
+            }
         }
 
         /// <summary>
@@ -125,10 +139,11 @@ namespace BlueLock
         /// </param>
         public void LogMessage(string message)
         {
-            Debug.WriteLine(message);
+            string str = $"[{DateTime.Now.ToLongTimeString()}] " + message;
+            Debug.WriteLine(str);
             listBox1.PerformSafely(() =>
             {
-                listBox1.Items.Add(message);
+                listBox1.Items.Add(str);
                 if (listBox1.SelectedItem != null)
                 {
                     listBox1.SetSelected(listBox1.Items.Count - 1, true);
@@ -174,8 +189,21 @@ namespace BlueLock
         /// <param name="elapsedEventArgs">The event arguments.</param>
         private void TimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
         {
+            bool before = Device.DeviceInRange;
             Timer.Enabled = false;
             CheckDeviceInRange();
+            if (before != Device.DeviceInRange)
+            {
+                if (Device.DeviceInRange)
+                {
+                    Timer.Interval = TimerInterval * 1000;
+                }
+                else
+                {
+                    Timer.Interval = TimerInterval / 3 * 1000;
+                }
+                LogMessage("TimeIntervalChange(" + Timer.Interval.ToString() + ")");
+            }
             Timer.Enabled = true;
         }
 
@@ -188,40 +216,40 @@ namespace BlueLock
             var inRange = Device.IsInRange();
             string str = String.Format("InRC:{0} OutRC:{1}", Device.InRangeCount, Device.OutRangeCount);
             Device.SetLockedState(inRange, force);
-            LogMessage($"[{DateTime.Now.ToLongTimeString()}] Fake service > {(inRange ? "In range" : "Not in range")} (" + str +")");
+            LogMessage($"Fake service > {(inRange ? "In range" : "Not in range")} (" + str + ")");
         }
 
         private void DeviceInRangeCallback(bool inRange)
         {
             var idt = Win32.GetIdleTime();
             //string str = "Total time : " + Win32.GetTickCount().ToString() + "; " + "Last input time : " + Win32.GetLastInputTime().ToString();
-            string str = "Idle time : " + idt.ToString();
+            string str = "Idle time:" + idt.ToString();
 
             if (inRange)
             {
                 // Device came back in range
-                LogMessage("Device in range(" + str + ")");
+                LogMessage("Device in range (" + str + " InDuration:[" + Device.InRangeDuration.ToString() + "])");
             }
             else
             {
                 bool b = false;
                 // Device went out of range
-                if (Device.OutRangeCount > 2)
+                if (!Device.FirstInRange)
                 {
-                    if (!Device.FirstInRange)
+                    if (Device.OutRangeDuration.TotalSeconds > TimerInterval)
                     {
-                        if (idt > TimerInterval * 3000)
+                        if (idt > TimerInterval * 2 * 1000)
                         {
                             b = true;
                             Device.FirstInRange = true;
-                            LogMessage("Device out of range" + str + " > locking Windows!(" + Device.OutRangeCount.ToString() + ")");
+                            LogMessage("Device out of range " + str + " > locking Windows!(" + Device.OutRangeCount.ToString() + ")");
                             Win32.LockWorkStation();
                         }
                     }
                 }
                 if (!b)
                 {
-                    LogMessage("Device out of range(" + str + ")");
+                    LogMessage("Device out of range (" + str + " OutDuration:[" + Device.OutRangeDuration.ToString() + "])");
                 }
             }
 
@@ -244,8 +272,7 @@ namespace BlueLock
             var device = DeviceDiscovery.SelectDeviceInDialog(this);
             if (device != null)
             {
-                LogMessage(
-                    $"Device selected > {device.DeviceName} [{device.DeviceAddress}]: {(device.Authenticated ? "Authenticated, " : "")}{(device.Connected ? "Connected, " : "")}{(device.Remembered ? "Remembered, " : "")}{device.ClassOfDevice.Device} ({device.ClassOfDevice.MajorDevice}), {device.Rssi}");
+                LogMessage($"Device selected > {device.DeviceName} [{device.DeviceAddress}]: {(device.Authenticated ? "Authenticated, " : "")}{(device.Connected ? "Connected, " : "")}{(device.Remembered ? "Remembered, " : "")}{device.ClassOfDevice.Device} ({device.ClassOfDevice.MajorDevice}), {device.Rssi}");
                 SetDevice(device);
             }
         }
@@ -289,6 +316,11 @@ namespace BlueLock
 
         private void button5_Click(object sender, EventArgs e)
         {
+            if (Device == null)
+            {
+                return;
+            }
+
             RadioVersions versions;
             if (!Device.TryGetVersions(out versions)) return;
 

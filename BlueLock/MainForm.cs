@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using BlueLock.Properties;
 using System.Security.Permissions;
 using Win32_API;
+using Microsoft.Win32;
 
 namespace BlueLock
 {
@@ -23,6 +24,8 @@ namespace BlueLock
         /// The singleton LogoForm.
         /// </summary>
         private static LogoForm _logoForm;
+
+        public static bool FirstOpen = true;
 
         public enum ConsoleNotificationFlagsEnum
         {
@@ -44,51 +47,62 @@ namespace BlueLock
             WTS_SESSION_REMOTE_CONTROL = 0x9
         }
 
-        public event Action<WM_WTSESSION_CHANGE_WparamEnum> WTSessionChange;
-
         public MainForm()
         {
             InitializeComponent();
 
-            Win32.WTSRegisterSessionNotification(this.Handle, (int)ConsoleNotificationFlagsEnum.NOTIFY_FOR_THIS_SESSION);
-            this.Closed += (sender, args) => Win32.WTSUnRegisterSessionNotification(this.Handle);
-            this.WTSessionChange += (param) =>
+            MMFrame.Windows.WindowMessaging.WindowMessage wm = new MMFrame.Windows.WindowMessaging.WindowMessage();
+
+            wm.CreateReceiver();
+
+            Win32.WTSRegisterSessionNotification(wm.ReceiverHandle, (int)ConsoleNotificationFlagsEnum.NOTIFY_FOR_ALL_SESSIONS);
+            this.Closed += (sender, args) => Win32.WTSUnRegisterSessionNotification(wm.ReceiverHandle);
+
+            wm.RegisterMessage(WM_WTSSESSION_CHANGE);
+            wm.RegisterEvent((m) =>
             {
-                switch (param)
+                if (m.Msg == WM_WTSSESSION_CHANGE)
                 {
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_CONNECT:
-                        _statusForm.LogMessage("Console Connect");
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_DISCONNECT:
-                        _statusForm.LogMessage("Console Disconnect");
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_CONNECT:
-                        _statusForm.LogMessage("Remote Connect");
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_DISCONNECT:
-                        _statusForm.LogMessage("Remote Disconnect");
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGON:
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGOFF:
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOCK:
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_UNLOCK:
-                        _statusForm.LogMessage("Session Unlock");
-                        break;
-                    case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_REMOTE_CONTROL:
-                        _statusForm.LogMessage("Remote Control");
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException("param");
+                    _statusForm.LogMessage($"WM_WTSSESSION_CHANGE SessionParam:{ (WM_WTSESSION_CHANGE_WparamEnum)m.WParam }");
+                    switch ((WM_WTSESSION_CHANGE_WparamEnum)m.WParam)
+                    {
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_CONNECT:
+                            _statusForm.LogMessage("Console Connect");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_CONSOLE_DISCONNECT:
+                            _statusForm.LogMessage("Console Disconnect");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_CONNECT:
+                            _statusForm.LogMessage("Remote Connect");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_REMOTE_DISCONNECT:
+                            _statusForm.LogMessage("Remote Disconnect");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGON:
+                            _statusForm.LogMessage("Session Logon");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOGOFF:
+                            _statusForm.LogMessage("Session Logoff");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_LOCK:
+                            _statusForm.LogMessage("Session Lock");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_UNLOCK:
+                            _statusForm.LogMessage("Session Unlock");
+                            break;
+                        case WM_WTSESSION_CHANGE_WparamEnum.WTS_SESSION_REMOTE_CONTROL:
+                            _statusForm.LogMessage("Remote Control");
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException("param");
+                    }
                 }
-            };
+            });
 
             //前のバージョンの設定を読み込み、新しいバージョンの設定とする
             Properties.Settings.Default.Upgrade();
 
-            _statusForm = new StatusForm();
+            _statusForm = new StatusForm(this.Handle);
             _logoForm = new LogoForm(this);
 
             _settingsForm = new SettingsForm(_statusForm);
@@ -114,6 +128,12 @@ namespace BlueLock
         {
             if (inRange)
             {
+                if (FirstOpen)
+                {
+                    this.Hide();
+                    FormMinimized();
+                    FirstOpen = false;
+                }
                 txtStatus.BackColor = Color.Green;
                 _logoForm.SetStatusBackground(Color.Green);
                 txtStatus.ForeColor = Color.White;
@@ -136,6 +156,9 @@ namespace BlueLock
 
         private void MainForm_Load(object sender, EventArgs e)
         {
+            SystemEvents.SessionEnding +=
+                new SessionEndingEventHandler(SystemEvents_SessionEnding);
+
             AttachEvents();
             _statusForm.Start();
         }
@@ -149,6 +172,7 @@ namespace BlueLock
 
         private void btnSettings_Click(object sender, EventArgs e)
         {
+            FirstOpen = false;
             _settingsForm.Show();
             _settingsForm.Location = new Point(this.Location.X + this.Size.Width, this.Location.Y);
         }
@@ -160,6 +184,7 @@ namespace BlueLock
             this.Visible = true;
             this.ShowInTaskbar = true;
             base.Activate();
+            //FormRestore();
         }
 
         private void terminateToolStripMenuItem_Click(object sender, EventArgs e)
@@ -178,25 +203,42 @@ namespace BlueLock
             _statusForm.EnsureTimerStopped();
         }
 
+        private void FormMinimized()
+        {
+            //this.Hide();
+            _logoForm.SetStatusImage(Resources.bluetooth_shield_64);
+            _logoForm.Show();
+            _logoForm.Size = new Size(74, 74);
+            _logoForm.Location = new Point(Screen.PrimaryScreen.WorkingArea.X + Screen.PrimaryScreen.WorkingArea.Width - _logoForm.Width, Screen.PrimaryScreen.WorkingArea.Y);
+            this.ShowInTaskbar = false;
+        }
+
+        private void FormRestore()
+        {
+            if (_logoForm != null)
+            {
+                _logoForm.Hide();
+                //this.ShowInTaskbar = true;
+                this.WindowState = FormWindowState.Normal;
+            }
+        }
+
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)
             {
-                //this.Hide();
-                _logoForm.SetStatusImage(Resources.bluetooth_shield_64);
-                _logoForm.Show();
-                _logoForm.Size = new Size(74, 74);
-                _logoForm.Location = new Point(Screen.PrimaryScreen.WorkingArea.X + Screen.PrimaryScreen.WorkingArea.Width - _logoForm.Width, Screen.PrimaryScreen.WorkingArea.Y);
-                this.ShowInTaskbar = false;
+                FormMinimized();
             }
             else
             {
-                if (_logoForm != null)
-                {
-                    _logoForm.Hide();
-                    this.ShowInTaskbar = true;
-                }
+                FormRestore();
             }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            SystemEvents.SessionEnding -=
+                new SessionEndingEventHandler(SystemEvents_SessionEnding);
         }
 
         [SecurityPermission(SecurityAction.Demand,
@@ -211,17 +253,29 @@ namespace BlueLock
                 m.Result = IntPtr.Zero;
                 return;
             }
-            if (m.Msg == WM_WTSSESSION_CHANGE)
+            else if (m.Msg == Win32.WM_MyMessage1)
             {
-                this.onWtSessionChange((WM_WTSESSION_CHANGE_WparamEnum)m.WParam);
+                toolStripMenuItem_Start.Enabled = false;
+                toolStripMenuItem_Stop.Enabled = true;
+            }else if (m.Msg == Win32.WM_MyMessage2)
+            {
+                toolStripMenuItem_Start.Enabled = true;
+                toolStripMenuItem_Stop.Enabled = false;
             }
 
             base.WndProc(ref m);
         }
 
-        private void onWtSessionChange(WM_WTSESSION_CHANGE_WparamEnum wparamEnum)
+        private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
         {
-            this.WTSessionChange?.Invoke(wparamEnum);
+            if (e.Reason == SessionEndReasons.Logoff)
+            {
+                terminateToolStripMenuItem.PerformClick();
+            }
+            else if (e.Reason == SessionEndReasons.SystemShutdown)
+            {
+                terminateToolStripMenuItem.PerformClick();
+            }
         }
     }
 }

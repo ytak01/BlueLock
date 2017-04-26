@@ -28,13 +28,13 @@ namespace BlueLock
             try
             {
                 this.GetServiceRecords(FakeServiceId);
-                Debug.WriteLine("Rssi:{0}",this.Rssi);
+                //Debug.WriteLine("Rssi:{0}",this.Rssi);
                 return true;
             }
-            catch (SocketException e)
+            catch (SocketException)// e)
             {
-                Debug.WriteLine(e.ErrorCode + ":" + e.Message);
-                Debug.WriteLine("LastSeen:{0} LastUsed:{1}", this.LastSeen, this.LastUsed);
+                //Debug.WriteLine(e.ErrorCode + ":" + e.Message);
+                Debug.WriteLine("LastSeen:{0} LastUsed:{1}", this.LastSeen.ToLocalTime(), this.LastUsed.ToLocalTime());
                 return false;
             }
         }
@@ -74,6 +74,22 @@ namespace BlueLock
             private set;
         }
 
+        public TimeSpan InRangeDuration
+        {
+            get
+            {
+                return DateTime.Now - InRangeDate;
+            }
+        }
+
+        public TimeSpan OutRangeDuration
+        {
+            get
+            {
+                return DateTime.Now - OutRangeDate;
+            }
+        }
+
         private bool dinrange;
 
         /// <summary>
@@ -85,21 +101,36 @@ namespace BlueLock
                 return dinrange;
             }
             set {
+                bool bchange;
+                if(dinrange == value)
+                {
+                    bchange = false;
+                }
+                else
+                {
+                    bchange = true;
+                }
                 dinrange = value;
                 if(dinrange)
                 {
-                    firstinrange = false;
                     InRangeCount += 1;
                     OutRangeCount = 0;
-                    InRangeDate = DateTime.Now;
-                    OutRangeDate = DateTime.MinValue;
+                    if(bchange || firstinrange)
+                    {
+                        InRangeDate = DateTime.Now;
+                        OutRangeDate = DateTime.MaxValue;
+                    }
+                    firstinrange = false;
                 }
                 else
                 {
                     InRangeCount = 0;
                     OutRangeCount += 1;
-                    InRangeDate = DateTime.MinValue;
-                    OutRangeDate = DateTime.Now;
+                    if(bchange)
+                    {
+                        InRangeDate = DateTime.MaxValue;
+                        OutRangeDate = DateTime.Now;
+                    }
                 }
             }
         }

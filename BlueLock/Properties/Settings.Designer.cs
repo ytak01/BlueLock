@@ -37,7 +37,7 @@ namespace BlueLock.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("15")]
+        [global::System.Configuration.DefaultSettingValueAttribute("30")]
         public int TimerInterval {
             get {
                 return ((int)(this["TimerInterval"]));

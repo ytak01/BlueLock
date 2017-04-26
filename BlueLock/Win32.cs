@@ -6,7 +6,6 @@ namespace Win32_API
 	internal struct LASTINPUTINFO 
 	{
 		public uint cbSize;
-
 		public uint dwTime;
 	}
 
@@ -15,7 +14,10 @@ namespace Win32_API
 	/// </summary>
 	public class Win32
 	{
-		[DllImport("User32.dll")]
+        public const int WM_MyMessage1 = 0x8000 + 0x01;
+        public const int WM_MyMessage2 = 0x8000 + 0x02;
+
+        [DllImport("User32.dll")]
 		public static extern bool LockWorkStation();
 
 		[DllImport("User32.dll")]
@@ -31,10 +33,16 @@ namespace Win32_API
         [DllImport("wtsapi32.dll", SetLastError = true)]
         public static extern bool WTSUnRegisterSessionNotification(IntPtr hWnd);
 
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern int SendMessage(IntPtr hWnd, int msg, int wParam, int lParam);
+
+        [DllImport("user32.dll", SetLastError = true)]
+        public static extern IntPtr FindWindow(string className, string windowName);
+
         public static uint GetIdleTime()
 		{
 			LASTINPUTINFO lastInPut = new LASTINPUTINFO();
-			lastInPut.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(lastInPut);
+			lastInPut.cbSize = (uint)Marshal.SizeOf(lastInPut);
 			GetLastInputInfo(ref lastInPut);
 
 			return ( (uint)Environment.TickCount - lastInPut.dwTime);
@@ -48,7 +56,7 @@ namespace Win32_API
 		public static long GetLastInputTime()
 		{
 			LASTINPUTINFO lastInPut = new LASTINPUTINFO();
-			lastInPut.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(lastInPut);
+			lastInPut.cbSize = (uint)Marshal.SizeOf(lastInPut);
 			if (!GetLastInputInfo(ref lastInPut))
 			{
 				throw new Exception(GetLastError().ToString());
