@@ -30,7 +30,7 @@ namespace BlueLock
         /// The timer used for periodic device checking.
         /// </summary>
         public static System.Timers.Timer Timer;
-        private IntPtr hwnd_mainform;
+        private IntPtr hwnd_receive;
 
         /// <summary>
         /// The initialisation of the main form.
@@ -39,7 +39,7 @@ namespace BlueLock
         {
             InitializeComponent();
 
-            this.hwnd_mainform = handle;
+            this.hwnd_receive = handle;
 
             TimerInterval = Properties.Settings.Default.TimerInterval;
             Timer = new System.Timers.Timer(TimerInterval / 3 * 1000);
@@ -91,10 +91,9 @@ namespace BlueLock
             numericUpDown1.Enabled = false;
             LogMessage($"Timer Start({TimerInterval} seconds)");
       
-            IntPtr hWnd = Win32.FindWindow(null, "BlueLock");
-            if (hWnd != null)
+            if (hwnd_receive != null)
             {
-                Win32.SendMessage(hWnd, Win32.WM_MyMessage1, 0, 0);
+                Win32.SendMessage(hwnd_receive, Win32.WM_MyMessage1, 0, 0);
             }
         }
 
@@ -108,11 +107,17 @@ namespace BlueLock
             numericUpDown1.Enabled = true;
             LogMessage("Timer Stop");
 
-            IntPtr hWnd = Win32.FindWindow(null, "BlueLock");
-            if (hWnd != null)
+            if (hwnd_receive != null)
             {
-                Win32.SendMessage(hWnd, Win32.WM_MyMessage2, 0, 0);
+                Win32.SendMessage(hwnd_receive, Win32.WM_MyMessage2, 0, 0);
             }
+        }
+
+        public void ForceTimerStop()
+        {
+            Timer.Stop();
+            Timer.Enabled = false;
+            EnsureTimerStopped();
         }
 
         /// <summary>
@@ -221,35 +226,36 @@ namespace BlueLock
 
         private void DeviceInRangeCallback(bool inRange)
         {
-            var idt = Win32.GetIdleTime();
+            double idts = Win32.GetIdleTime() / 1000;
             //string str = "Total time : " + Win32.GetTickCount().ToString() + "; " + "Last input time : " + Win32.GetLastInputTime().ToString();
-            string str = "Idle time:" + idt.ToString();
+            string str = "IdleTime:" + idts.ToString() + "s";
 
             if (inRange)
             {
                 // Device came back in range
-                LogMessage("Device in range (" + str + " InDuration:[" + Device.InRangeDuration.ToString() + "])");
+                LogMessage("Device in range (" + str + " InDuration:" + Device.InRangeDuration.TotalSeconds.ToString() + ")");
             }
             else
             {
+                str += " OutDuration:" + Device.OutRangeDuration.TotalSeconds.ToString();
                 bool b = false;
                 // Device went out of range
                 if (!Device.FirstInRange)
                 {
                     if (Device.OutRangeDuration.TotalSeconds > TimerInterval)
                     {
-                        if (idt > TimerInterval * 2 * 1000)
+                        if (idts > TimerInterval * 2)
                         {
                             b = true;
                             Device.FirstInRange = true;
-                            LogMessage("Device out of range " + str + " > locking Windows!(" + Device.OutRangeCount.ToString() + ")");
+                            LogMessage("Device out of range " + str + " > locking Windows!(" + str + ")");
                             Win32.LockWorkStation();
                         }
                     }
                 }
                 if (!b)
                 {
-                    LogMessage("Device out of range (" + str + " OutDuration:[" + Device.OutRangeDuration.ToString() + "])");
+                    LogMessage("Device out of range (" + str + ")");
                 }
             }
 

@@ -5,6 +5,7 @@ using BlueLock.Properties;
 using System.Security.Permissions;
 using Win32_API;
 using Microsoft.Win32;
+using MMFrame.Windows.WindowMessaging;
 
 namespace BlueLock
 {
@@ -25,14 +26,20 @@ namespace BlueLock
         /// </summary>
         private static LogoForm _logoForm;
 
+
+        public static WindowMessage wm = new WindowMessage();
+
         public static bool FirstOpen = true;
+
+        private const int WM_WTSSESSION_CHANGE = 0x2b1;
+        private const int WM_QUERYENDSESSION = 0x11;
+        private const int WM_NCLBUTTONDBLCLK = 0xa3;
 
         public enum ConsoleNotificationFlagsEnum
         {
             NOTIFY_FOR_ALL_SESSIONS = 1,
             NOTIFY_FOR_THIS_SESSION = 0
         }
-        private const int WM_WTSSESSION_CHANGE = 0x2b1;
 
         public enum WM_WTSESSION_CHANGE_WparamEnum
         {
@@ -51,7 +58,8 @@ namespace BlueLock
         {
             InitializeComponent();
 
-            MMFrame.Windows.WindowMessaging.WindowMessage wm = new MMFrame.Windows.WindowMessaging.WindowMessage();
+            SystemEvents.SessionEnding +=
+                new SessionEndingEventHandler(SystemEvents_SessionEnding);
 
             wm.CreateReceiver();
 
@@ -59,10 +67,31 @@ namespace BlueLock
             this.Closed += (sender, args) => Win32.WTSUnRegisterSessionNotification(wm.ReceiverHandle);
 
             wm.RegisterMessage(WM_WTSSESSION_CHANGE);
-            wm.RegisterEvent((m) =>
+            //wm.RegisterMessage(WM_QUERYENDSESSION);
+            wm.RegisterMessage(Win32.WM_MyMessage1);
+            wm.RegisterMessage(Win32.WM_MyMessage2);
+            wm.RegisterEvent((m) => { MessageReceiveChangeCallback(m); });
+
+            //前のバージョンの設定を読み込み、新しいバージョンの設定とする
+            Properties.Settings.Default.Upgrade();
+
+            _statusForm = new StatusForm(wm.ReceiverHandle);
+            _logoForm = new LogoForm(this);
+
+            _settingsForm = new SettingsForm(_statusForm);
+        }
+
+        delegate void delegateMessageReceiveChangeCallback(Message m);
+        private void MessageReceiveChangeCallback(Message m)
+        {
+            Invoke(new delegateMessageReceiveChangeCallback(MessageReceive),m);
+        }
+
+        private void MessageReceive(Message m)
+        {
+            switch (m.Msg)
             {
-                if (m.Msg == WM_WTSSESSION_CHANGE)
-                {
+                case WM_WTSSESSION_CHANGE:
                     _statusForm.LogMessage($"WM_WTSSESSION_CHANGE SessionParam:{ (WM_WTSESSION_CHANGE_WparamEnum)m.WParam }");
                     switch ((WM_WTSESSION_CHANGE_WparamEnum)m.WParam)
                     {
@@ -96,16 +125,20 @@ namespace BlueLock
                         default:
                             throw new ArgumentOutOfRangeException("param");
                     }
-                }
-            });
-
-            //前のバージョンの設定を読み込み、新しいバージョンの設定とする
-            Properties.Settings.Default.Upgrade();
-
-            _statusForm = new StatusForm(this.Handle);
-            _logoForm = new LogoForm(this);
-
-            _settingsForm = new SettingsForm(_statusForm);
+                    break;
+                //case WM_QUERYENDSESSION:
+                //    _statusForm.LogMessage("Shutdown detect");
+                //    terminateToolStripMenuItem.PerformClick();
+                //    break;
+                case Win32.WM_MyMessage1:
+                    toolStripMenuItem_Start.Enabled = false;
+                    toolStripMenuItem_Stop.Enabled = true;
+                    break;
+                case Win32.WM_MyMessage2:
+                    toolStripMenuItem_Start.Enabled = true;
+                    toolStripMenuItem_Stop.Enabled = false;
+                    break;
+            }
         }
 
         /// <summary>
@@ -130,8 +163,7 @@ namespace BlueLock
             {
                 if (FirstOpen)
                 {
-                    this.Hide();
-                    FormMinimized();
+                    this.WindowState = FormWindowState.Minimized;
                     FirstOpen = false;
                 }
                 txtStatus.BackColor = Color.Green;
@@ -156,9 +188,6 @@ namespace BlueLock
 
         private void MainForm_Load(object sender, EventArgs e)
         {
-            SystemEvents.SessionEnding +=
-                new SessionEndingEventHandler(SystemEvents_SessionEnding);
-
             AttachEvents();
             _statusForm.Start();
         }
@@ -179,18 +208,18 @@ namespace BlueLock
 
         private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
         {
-            _logoForm.Hide();
-            base.Show();
-            this.Visible = true;
-            this.ShowInTaskbar = true;
-            base.Activate();
-            //FormRestore();
+            this.WindowState = FormWindowState.Normal;
         }
 
         private void terminateToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            wm.ClearMessages();
+            wm.DestroyReceiver();
+            _statusForm.LogMessage("Terminate");
+            _statusForm.ForceTimerStop();
             notifyIcon1.Visible = false;
-            Application.Exit();
+            this.Close();
+            //Application.Exit();
         }
 
         private void toolStripMenuItem_Start_Click(object sender, EventArgs e)
@@ -203,69 +232,39 @@ namespace BlueLock
             _statusForm.EnsureTimerStopped();
         }
 
-        private void FormMinimized()
-        {
-            //this.Hide();
-            _logoForm.SetStatusImage(Resources.bluetooth_shield_64);
-            _logoForm.Show();
-            _logoForm.Size = new Size(74, 74);
-            _logoForm.Location = new Point(Screen.PrimaryScreen.WorkingArea.X + Screen.PrimaryScreen.WorkingArea.Width - _logoForm.Width, Screen.PrimaryScreen.WorkingArea.Y);
-            this.ShowInTaskbar = false;
-        }
-
-        private void FormRestore()
-        {
-            if (_logoForm != null)
-            {
-                _logoForm.Hide();
-                //this.ShowInTaskbar = true;
-                this.WindowState = FormWindowState.Normal;
-            }
-        }
-
         private void MainForm_Resize(object sender, EventArgs e)
         {
             if (WindowState == FormWindowState.Minimized)
             {
-                FormMinimized();
+                _logoForm.SetStatusImage(Resources.bluetooth_shield_64);
+                _logoForm.Show();
+                _logoForm.Size = new Size(74, 74);
+                _logoForm.Location = new Point(Screen.PrimaryScreen.WorkingArea.X + Screen.PrimaryScreen.WorkingArea.Width - _logoForm.Width, Screen.PrimaryScreen.WorkingArea.Y);
+                this.ShowInTaskbar = false;
             }
             else
             {
-                FormRestore();
+                if (_logoForm != null)
+                {
+                    _logoForm.Hide();
+                }
+                this.ShowInTaskbar = true;
             }
-        }
-
-        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
-        {
-            SystemEvents.SessionEnding -=
-                new SessionEndingEventHandler(SystemEvents_SessionEnding);
         }
 
         [SecurityPermission(SecurityAction.Demand,
             Flags = SecurityPermissionFlag.UnmanagedCode)]
         protected override void WndProc(ref Message m)
         {
-            const int WM_NCLBUTTONDBLCLK = 0xA3;
-
             if (m.Msg == WM_NCLBUTTONDBLCLK)
             {
                 //非クライアント領域がダブルクリックされた時
                 m.Result = IntPtr.Zero;
                 return;
             }
-            else if (m.Msg == Win32.WM_MyMessage1)
-            {
-                toolStripMenuItem_Start.Enabled = false;
-                toolStripMenuItem_Stop.Enabled = true;
-            }else if (m.Msg == Win32.WM_MyMessage2)
-            {
-                toolStripMenuItem_Start.Enabled = true;
-                toolStripMenuItem_Stop.Enabled = false;
-            }
 
             base.WndProc(ref m);
         }
-
         private void SystemEvents_SessionEnding(object sender, SessionEndingEventArgs e)
         {
             if (e.Reason == SessionEndReasons.Logoff)
@@ -276,6 +275,12 @@ namespace BlueLock
             {
                 terminateToolStripMenuItem.PerformClick();
             }
+        }
+
+        private void MainForm_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            SystemEvents.SessionEnding -=
+                new SessionEndingEventHandler(SystemEvents_SessionEnding);
         }
     }
 }
