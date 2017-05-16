@@ -240,6 +240,8 @@ namespace BlueLock
                 _logoForm.Show();
                 _logoForm.Size = new Size(74, 74);
                 _logoForm.Location = new Point(Screen.PrimaryScreen.WorkingArea.X + Screen.PrimaryScreen.WorkingArea.Width - _logoForm.Width, Screen.PrimaryScreen.WorkingArea.Y);
+                this.Opacity = 0;
+                this.FormBorderStyle = FormBorderStyle.SizableToolWindow;
                 this.ShowInTaskbar = false;
             }
             else
@@ -248,6 +250,8 @@ namespace BlueLock
                 {
                     _logoForm.Hide();
                 }
+                this.FormBorderStyle = FormBorderStyle.FixedSingle;
+                this.Opacity = 100;
                 this.ShowInTaskbar = true;
             }
         }
